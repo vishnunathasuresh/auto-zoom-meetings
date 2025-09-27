@@ -1,0 +1,15 @@
+# Python-generated files
+__pycache__/
+/.ruff_cache/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+/config.yaml
+/copilot-instructions.md
+/meeting_bot.log
