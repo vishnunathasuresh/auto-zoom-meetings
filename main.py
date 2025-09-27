@@ -59,6 +59,8 @@ class ZoomMeetingBot:
             info(
                 f"Joining {meeting_type} meeting at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             )
+            # TODO: Add a way to close previous meeting if still open
+            # TODO: Add a way to close previous meeting browser if still open
             webbrowser.open(url)
             info(f"{meeting_type.capitalize()} meeting opened successfully in browser")
             self.last_meeting = meeting_type
