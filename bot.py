@@ -64,9 +64,6 @@ class ZoomMeetingBot:
         if hour < self.start_hour or hour >= self.end_hour:
             return None, None
 
-        if not self.last_meeting and hour >= self.start_hour and hour < self.end_hour:
-            return self.regular_info.get("link", ""), "regular"
-
         if self.lab_times:
             lab_today = self.lab_times.get(weekday)
             if lab_today:
@@ -100,6 +97,9 @@ class ZoomMeetingBot:
                 else:
                     if hour == int(elective_today.split(":")[0]):
                         return self.elective_info.get("link", ""), "elective"
+
+        if not self.last_meeting and hour >= self.start_hour and hour < self.end_hour:
+            return self.regular_info.get("link", ""), "regular"
 
         if (
             self.regular_info.get("link", "")

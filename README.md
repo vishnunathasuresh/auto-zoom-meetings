@@ -142,8 +142,8 @@ Log levels:
 ```
 auto-zoom-meetings/
 ├── main.py           # Main application
+├── bot.py            # Meeting bot logic
 ├── config.yaml       # Meeting configuration
-├── meetings.yaml     # Alternative config format
 ├── README.md         # This documentation
 ├── pyproject.toml    # Project metadata
 └── meeting_bot.log   # Generated log file
@@ -166,6 +166,7 @@ auto-zoom-meetings/
    - Ensure default browser is set
    - Check Zoom links are valid
    - Verify internet connection
+   - Check for pop-up blockers, set it to allow pop-ups
 
 ### Debug Mode
 
@@ -173,26 +174,14 @@ To see all schedule checks, modify logging level in `main.py`:
 ```python
 logging.basicConfig(level=logging.DEBUG, ...)
 ```
-
-## Development
-
-### Constants
-
-Key constants defined in `main.py`:
-- `LUNCH_HOUR = 13` (1 PM)
-- `LAST_CLASS_START_HOUR = 16` (4 PM)
-- `CHECK_MINUTE = 5` (Check at X:05)
-- `IST_TIMEZONE = 'Asia/Kolkata'`
-
 ### Adding Features
 
 1. **New Meeting Types**: Add to `config.yaml` and update priority logic
-2. **Different Time Zones**: Modify `IST_TIMEZONE` constant
+2. **Add Browser Options**: Interact with different browsers
 3. **Custom Schedule**: Update time checking logic in `get_current_meeting()`
 
 ## License
-
-This project is open source. Feel free to modify and distribute.
+MIT License
 
 ## Contributing
 
