@@ -67,7 +67,7 @@ class Bot:
                     for offset in range(1, elective_duration):
                         if index + offset < len(meetings):
                             indexes_to_remove.add(index + offset)
-    
+
             if self.is_break_time(meeting.join_time.hour):
                 indexes_to_remove.add(index)
 
@@ -76,7 +76,6 @@ class Bot:
             meetings.pop(index)
 
         return meetings
-                
 
     def generate_schedule(self):
         # store dates in meetings
@@ -102,12 +101,14 @@ class Bot:
                 self.meetings = []
 
     def join_meeting(self, meeting: Meeting):
-        info(f"Joining {meeting.meeting_type} meeting at {meeting.join_time.strftime('%H:%M')}")
+        info(
+            f"Joining {meeting.meeting_type} meeting at {meeting.join_time.strftime('%H:%M')}"
+        )
         try:
             webbrowser.open(meeting.link)
         except Exception as e:
             error(f"Failed to open meeting link: {str(e)}")
-    
+
     def run(self):
         """
         Schedules all meetings for the day and enters a loop to join them at the correct time.

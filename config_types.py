@@ -31,6 +31,52 @@ CONFIG = {
     },
 }
 
+CONFIG_SCHEMA = {
+    "start_time": {"type": int, "required": True},
+    "end_time": {"type": int, "required": True},
+    "weekend": {"type": bool, "required": True},
+    "join_minutes_before": {"type": int, "required": True},
+    "breaks": {
+        "type": dict,
+        "required": True,
+        "schema": {
+            "duration": {"type": int, "required": True},
+            "times": {"type": list, "required": True, "subtype": int},
+        },
+    },
+    "regular": {
+        "type": dict,
+        "required": True,
+        "schema": {
+            "special": {"type": bool, "required": True},
+            "time": {"type": dict, "required": True, "subtype": list},
+            "duration": {"type": int, "required": True},
+            "link": {"type": str, "required": True},
+        },
+    },
+    "labs": {
+        "type": dict,
+        "required": True,
+        "schema": {
+            "special": {"type": bool, "required": True},
+            "time": {"type": dict, "required": True, "subtype": list},
+            "duration": {"type": int, "required": True},
+            "link": {"type": str, "required": True},
+        },
+    },
+    "electives": {
+        "type": dict,
+        "required": True,
+        "schema": {
+            "special": {"type": bool, "required": True},
+            "time": {"type": dict, "required": True, "subtype": list},
+            "duration": {"type": int, "required": True},
+            "link": {"type": str, "required": True},
+        },
+    },
+}
+
+
 @dataclass
 class Breaks:
     duration: int
@@ -110,10 +156,12 @@ class Meeting:
     meeting_type: str
     link: str
 
-    def __init__(self, join_time: datetime, meeting_type: str = "regular", link: str = ""):
+    def __init__(
+        self, join_time: datetime, meeting_type: str = "regular", link: str = ""
+    ):
         self.join_time = join_time
         self.meeting_type = meeting_type
         self.link = link
-    
+
     def __repr__(self):
         return f"Meeting(join_time={self.join_time}, meeting_type={self.meeting_type}, link={self.link})"

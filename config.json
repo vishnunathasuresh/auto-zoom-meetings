@@ -1,0 +1,25 @@
+{
+    "start_time": 9,
+    "end_time": 17,
+    "weekend": false,
+    "join_minutes_before": 5,
+    "breaks": {"duration": 1, "times": [13]},
+    "regular": {
+        "special": false,
+        "time": {},
+        "duration": 1,
+        "link": "link goes here"
+    },
+    "labs": {
+        "special": true,
+        "time": {"mon": [11], "tue": [15], "wed": [10, 15]},
+        "duration": 2,
+        "link": "link goes here"
+    },
+    "electives": {
+        "special": true,
+        "time": {"thu": [12], "fri": [9]},
+        "duration": 1,
+        "link": "link goes here"
+    }
+}
