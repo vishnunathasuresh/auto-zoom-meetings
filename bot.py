@@ -41,6 +41,24 @@ class ZoomMeetingBot:
         return datetime.now().weekday() < 5
 
     def get_current_meeting(self):
+        """
+        Determines which meeting (lab, elective, or regular) should be joined at the current time.
+        
+        Returns:
+            tuple: (meeting_url, meeting_type) if a meeting should be joined, otherwise (None, None).
+
+        Logic:
+        - Skips weekends if not allowed by config.
+        - Skips lunch hour.
+        - Only triggers at 5 minutes past the hour within allowed hours.
+        - If a lab is scheduled now, returns lab meeting and blocks other meetings for the lab duration.
+        - If an elective is scheduled now, returns elective meeting.
+        - Otherwise, returns regular meeting if scheduled.
+        - Returns (None, None) if no meeting should be joined at this time.
+        """
+        """
+        
+        """
         now = datetime.now()
         hour = now.hour
         minute = now.minute
