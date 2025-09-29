@@ -1,160 +1,159 @@
+from pprint import pprint
 import webbrowser
 from time import sleep
-from datetime import datetime
+from datetime import datetime, date
 from schedule import every, run_pending
-from logging import error, info, debug, warning
+from logging import error, info
+import sys
+
+from config_types import Config, ClassType, Breaks, Meeting
 
 
-class ZoomMeetingBot:
-    def __init__(self, config):
+class Bot:
+    def __init__(self, config: Config, sleep_interval: int = 30):
         self.config = config
-        self.meeting_types = config.meeting_types
-        self.regular_info = self.meeting_types.get("regular", {})
-        self.lab_info = self.meeting_types.get("lab", {})
-        self.elective_info = self.meeting_types.get("elective", {})
-        self.lab_times = self.lab_info.get("time", {})
-        self.elective_times = self.elective_info.get("time", {})
-        self.lab_duration = int(self.lab_info.get("duration", "2 hours").split()[0])
-        self.start_hour = int(config.start_time.split(":")[0])
-        self.end_hour = int(config.end_time.split(":")[0])
-        self.lunch_hour = config.lunch_hour
+        self.breaks: Breaks = config.breaks
+        self.regular_info: ClassType = config.regular
+        self.lab_info: ClassType = config.labs
+        self.elective_info: ClassType = config.electives
+        self.start_time = config.start_time
+        self.end_time = config.end_time
+        self.minutes = config.join_minutes_before
+        self.meetings: list[Meeting] = []
         self.weekend = config.weekend
-        self.last_meeting = None
-        self.lab_end_time = None
+        self.sleep_interval = sleep_interval  # Sleep interval in seconds
 
-    def join_meeting(self, url, meeting_type):
-        try:
-            info(
-                f"Joining {meeting_type} meeting at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            )
-            # TODO: Add a way to close previous meeting if still open
-            # TODO: Add a way to close previous meeting browser if still open
-            webbrowser.open(url)
-            info(f"{meeting_type.capitalize()} meeting opened successfully in browser")
-            self.last_meeting = meeting_type
-        except Exception as e:
-            error(f"Failed to open {meeting_type} meeting: {str(e)}")
+    def is_break_time(self, hour: int) -> bool:
+        return hour in self.breaks.times
 
-    def is_weekday(self) -> bool:
-        if self.weekend:
-            return True
-        return datetime.now().weekday() < 5
-
-    def get_current_meeting(self):
-        """
-        Determines which meeting (lab, elective, or regular) should be joined at the current time.
-
-        Returns:
-            tuple: (meeting_url, meeting_type) if a meeting should be joined, otherwise (None, None).
-
-        Logic:
-        - Skips weekends if not allowed by config.
-        - Skips lunch hour.
-        - Only triggers at 5 minutes past the hour within allowed hours.
-        - If a lab is scheduled now, returns lab meeting and blocks other meetings for the lab duration.
-        - If an elective is scheduled now, returns elective meeting.
-        - Otherwise, returns regular meeting if scheduled.
-        - Returns (None, None) if no meeting should be joined at this time.
-        """
-        now = datetime.now()
-        hour = now.hour
-        minute = now.minute
-        weekday = now.strftime("%a").lower()[:3]
-
-        if self.lab_end_time and now < self.lab_end_time:
-            info("Currently in a lab session, skipping other meetings.")
-            return None, None
-
-        if not self.is_weekday():
-            info("Skipping meeting - weekend")
-            return None, None
-
-        if hour == self.lunch_hour:
-            info("Skipping meeting - lunch break")
-            return None, None
-
-        if minute != 5 and self.last_meeting:
-            return None, None
-
-        if hour < self.start_hour or hour >= self.end_hour:
-            return None, None
-
-        if self.lab_times:
-            lab_today = self.lab_times.get(weekday)
-            if lab_today:
-                if isinstance(lab_today, list):
-                    for lab_time in lab_today:
-                        if hour == int(lab_time.split(":")[0]):
-                            self.lab_end_time = now.replace(
-                                hour=hour + self.lab_duration,
-                                minute=0,
-                                second=0,
-                                microsecond=0,
-                            )
-                            return self.lab_info.get("link", ""), "lab"
-                else:
-                    if hour == int(lab_today.split(":")[0]):
-                        self.lab_end_time = now.replace(
-                            hour=hour + self.lab_duration,
-                            minute=0,
-                            second=0,
-                            microsecond=0,
-                        )
-                        return self.lab_info.get("link", ""), "lab"
-
-        if self.elective_times:
-            elective_today = self.elective_times.get(weekday)
+    def map_elective_time(self, meeting: Meeting) -> Meeting:
+        meeting_hour = meeting.join_time.hour
+        if self.elective_info.special:
+            day = meeting.join_time.strftime("%a").lower()[:3]
+            elective_today = self.elective_info.time.get(day)
             if elective_today:
-                if isinstance(elective_today, list):
-                    for elective_time in elective_today:
-                        if hour == int(elective_time.split(":")[0]):
-                            return self.elective_info.get("link", ""), "elective"
-                else:
-                    if hour == int(elective_today.split(":")[0]):
-                        return self.elective_info.get("link", ""), "elective"
+                for elective_time in elective_today:
+                    if meeting_hour == elective_time:
+                        meeting.meeting_type = "elective"
+                        meeting.link = self.elective_info.link
+        return meeting
 
-        if not self.last_meeting and hour >= self.start_hour and hour < self.end_hour:
-            return self.regular_info.get("link", ""), "regular"
+    def map_lab_time(self, meeting: Meeting) -> Meeting:
+        meeting_hour = meeting.join_time.hour
+        if self.lab_info.special:
+            day = meeting.join_time.strftime("%a").lower()[:3]
+            lab_today = self.lab_info.time.get(day)
+            if lab_today:
+                for lab_time in lab_today:
+                    if meeting_hour == lab_time:
+                        meeting.meeting_type = "lab"
+                        meeting.link = self.lab_info.link
+        return meeting
 
-        if (
-            self.regular_info.get("link", "")
-            and self.regular_info.get("time", "") == "regular"
-        ):
-            return self.regular_info.get("link", ""), "regular"
-        return None, None
+    def filter_redundant_meetings(self, meetings: list[Meeting]) -> list[Meeting]:
+        indexes_to_remove = set()
+        for index in range(len(meetings)):
+            meeting = meetings[index]
+            if meeting.meeting_type == "lab":
+                lab_duration = self.lab_info.duration
+                if lab_duration > 1:
+                    for offset in range(1, lab_duration):
+                        if index + offset < len(meetings):
+                            indexes_to_remove.add(index + offset)
 
-    def scheduled_meeting_check(self):
-        debug("Running scheduled meeting check...")
-        url, meeting_type = self.get_current_meeting()
-        debug(f"Current meeting check: URL={url}, Type={meeting_type}")
-        if url and meeting_type:
-            if self.last_meeting != meeting_type:
-                self.join_meeting(url, meeting_type)
-            else:
-                info(f"Already joined {meeting_type} meeting, skipping duplicate join.")
-        else:
-            current_time = datetime.now().strftime("%H:%M")
-            info(f"No meeting scheduled at {current_time}")
+            if meeting.meeting_type == "elective":
+                elective_duration = self.elective_info.duration
+                if elective_duration > 1:
+                    for offset in range(1, elective_duration):
+                        if index + offset < len(meetings):
+                            indexes_to_remove.add(index + offset)
+    
+            if self.is_break_time(meeting.join_time.hour):
+                indexes_to_remove.add(index)
 
-    def setup_schedule(self):
-        every().minute.do(self.scheduled_meeting_check)
-        info("Meeting bot schedule initialized")
-        info(
-            f"Meetings will occur at: {[f'{hour:02d}:05' for hour in range(self.start_hour, self.end_hour) if hour != self.lunch_hour]}"
+        # Remove meetings in reverse order to avoid indexing issues
+        for index in sorted(indexes_to_remove, reverse=True):
+            meetings.pop(index)
+
+        return meetings
+                
+
+    def generate_schedule(self):
+        # store dates in meetings
+        meeting_times = list(
+            datetime.strptime(f"{date.today()} {hour}:{self.minutes}", "%Y-%m-%d %H:%M")
+            for hour in range(self.start_time, self.end_time)
         )
-        info("Last class will be from 16:05 to 17:00.")
 
-    def run(self):
-        info("Setting up meeting schedule...")
-        self.setup_schedule()
-        info("Meeting bot started. Press Ctrl+C to stop.")
+        self.meetings = [
+            Meeting(
+                join_time=meeting_time,
+                meeting_type="regular",
+                link=self.regular_info.link,
+            )
+            for meeting_time in meeting_times
+        ]
+        self.meetings = list(map(self.map_elective_time, self.meetings))
+        self.meetings = list(map(self.map_lab_time, self.meetings))
+        self.meetings = self.filter_redundant_meetings(self.meetings)
 
+        if not self.weekend:
+            if date.today().weekday() >= 5:
+                self.meetings = []
+
+    def join_meeting(self, meeting: Meeting):
+        info(f"Joining {meeting.meeting_type} meeting at {meeting.join_time.strftime('%H:%M')}")
         try:
-            while True:
-                debug("Refreshing meeting status...")
-                run_pending()
-                sleep(30)
-        except KeyboardInterrupt:
-            warning("Meeting bot stopped by user")
+            webbrowser.open(meeting.link)
         except Exception as e:
-            error(f"Unexpected error: {str(e)}")
+            error(f"Failed to open meeting link: {str(e)}")
+    
+    def run(self):
+        """
+        Schedules all meetings for the day and enters a loop to join them at the correct time.
+
+        - Calls generate_schedule() to build today's meeting list.
+        - Schedules each meeting using the 'schedule' library to run at the exact join time.
+        - Checks for date change in the main loop; if the date changes, regenerates and reschedules meetings for the new day.
+        - Enters an infinite loop, calling run_pending() and sleeping for self.sleep_interval seconds.
+        - If the script is not running or the system is asleep at the scheduled time, the meeting will be missed (lapse).
+        - The schedule library does not run missed jobs retroactively.
+        - Logs all activity and errors.
+        """
+        import schedule
+        from datetime import date
+
+        def schedule_meetings():
+            # Clear all jobs
+            jobs = list(schedule.get_jobs())
+            for job in jobs:
+                schedule.cancel_job(job)
+            self.generate_schedule()
+            info(f"Meetings scheduled: {self.meetings}")
+            if not self.meetings:
+                info("No meetings scheduled for today.")
+                return
+            for meeting in self.meetings:
+                schedule.every().day.at(meeting.join_time.strftime("%H:%M")).do(
+                    self.join_meeting, meeting
+                )
+            info("Scheduler set up. Waiting to join meetings...")
+
+        # Initial schedule
+        schedule_meetings()
+        current_day = date.today()
+
+        while True:
+            try:
+                run_pending()
+                sleep(self.sleep_interval)
+                # Check for date change
+                if date.today() != current_day:
+                    current_day = date.today()
+                    info("Date changed. Regenerating schedule for new day...")
+                    schedule_meetings()
+            except KeyboardInterrupt:
+                info("Bot stopped by user.")
+                sys.exit()
+            except Exception as e:
+                error(f"Unexpected error: {str(e)}")

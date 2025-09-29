@@ -1,202 +1,84 @@
+## Using Environment Variables (.env)
+
+You can store sensitive or environment-specific values (like Zoom links) in a `.env` file and load them automatically.
+
+1. **Create a `.env` file in your project directory:**
+   ```env
+   LABS=https://zoom.us/j/your_lab_meeting_id
+   ELECTIVES=https://zoom.us/j/your_elective_meeting_id
+   REGULAR=https://zoom.us/j/your_regular_meeting_id
+   ```
+
+
+
+This keeps sensitive data out of your codebase and makes it easy to change links or credentials without editing code.
 # Auto Zoom Meeting Bot
 
-An automated Zoom meeting bot that joins scheduled meetings based on a configurable YAML file. The bot runs continuously and automatically opens Zoom meetings in your default browser at scheduled times.
+An automated Python bot that joins scheduled Zoom meetings. The bot runs continuously, opening meetings in your default browser at the right time, and automatically refreshes its schedule every day.
 
 ## Features
 
-- 🕐 **Automatic Scheduling**: Joins meetings at 5 minutes past each hour
-- 📅 **Configurable Schedule**: Define different meeting types (regular, lab, elective)
-- 🎯 **Smart Scheduling**: Prioritizes lab sessions > electives > regular classes
-- 🍽️ **Lunch Break**: No meetings during 1-2 PM
-- 📱 **Weekend Support**: Optional weekend meetings
-- 🇮🇳 **IST Timezone**: Uses Indian Standard Time
-- 📊 **Logging**: Comprehensive logging to file and console
-- 🔄 **One Meeting at a Time**: Prevents duplicate meeting joins
+- **Automatic Scheduling:** Joins meetings at 5 minutes past each hour, skipping lunch (1-2 PM)
+- **Configurable:** Supports regular, lab, and elective meetings with custom times and durations
+- **Priority Logic:** Lab > Elective > Regular (never joins more than one at a time)
+- **IST Timezone:** Designed for Indian Standard Time
+- **Weekend Support:** Optional meetings on weekends
+- **Daily Refresh:** Regenerates schedule at midnight, no need to restart
+- **Logging:** Logs all actions to `meeting_bot.log` and the console
 
-## Prerequisites
+## Quick Start
 
-- Python 3.8 or higher
-- Internet connection
-- Default web browser configured
-
-## Installation
-
-1. Clone or download this repository:
-   ```bash
-   git clone <repository-url>
-   cd auto-zoom-meetings
-   ```
-
-2. Install dependencies:
+1. **Install dependencies:**
    ```bash
    pip install pyyaml schedule
-   # OR using uv
-   uv add pyyaml schedule
+   # or
+   uv add pyyaml schedule python-dotenv
    ```
-
-## Configuration
-
-### Config File Structure
-
-Create or modify `config.yaml`:
-
-```yaml
-start_time: "09:00"  # Start of class hours
-end_time: "17:00"    # End of class hours (last class starts at 16:05)
-repeat: true         # Enable recurring meetings
-occurrences: 1       # Number of occurrences
-weekend: false       # Enable weekend meetings
-
-type:
-  regular:
-    link: https://zoom.us/j/your-regular-meeting-id
-    time: "regular"    # Regular schedule
-    duration: "1 hour"
-    
-  lab:
-    link: https://zoom.us/j/your-lab-meeting-id
-    time: 
-      mon: "11:00"
-      tue: "15:00"
-      wed: 
-        - "10:00"
-        - "15:00"
-    duration: "2 hours"
-  
-  elective:
-    link: https://zoom.us/j/your-elective-meeting-id
-    time:
-      thu: "12:00"
-      fri: "09:00"
-    duration: "1 hour"
-```
-
-### Configuration Options
-
-| Option | Description | Default |
-|--------|-------------|--------|
-| `start_time` | Start of class hours (24-hour format) | "09:00" |
-| `end_time` | End of class hours | "17:00" |
-| `repeat` | Enable recurring meetings | true |
-| `occurrences` | Number of meeting occurrences | 1 |
-| `weekend` | Allow meetings on weekends | false |
-
-### Meeting Types
-
-#### Regular Meetings
-- Scheduled at regular intervals during class hours
-- Joins at 5 minutes past each hour (except lunch hour)
-
-#### Lab Sessions
-- Higher priority than regular meetings
-- 2-hour duration
-- Can be scheduled for specific days and times
-- Supports multiple sessions per day
-
-#### Elective Classes
-- Medium priority (between lab and regular)
-- Typically on specific days (Thu/Fri)
-- 1-hour duration
-
-## Usage
-
-1. **Configure your meetings**: Edit `config.yaml` with your Zoom links and schedule
-
-2. **Run the bot**:
+2. **Edit `config.yaml`:**
+   - Set your Zoom links and schedule (see below)
+3. **Run the bot:**
    ```bash
    python main.py
    ```
-
-3. **Stop the bot**: Press `Ctrl+C`
-
 ## How It Works
 
-1. **Initialization**: Loads configuration from `config.yaml`
-2. **Scheduling**: Sets up minute-by-minute checks
-3. **Meeting Detection**: At each check, determines if a meeting should start
-4. **Priority Logic**: Lab > Elective > Regular meetings
-5. **Browser Launch**: Opens the appropriate Zoom link in your default browser
-6. **Logging**: Records all actions to `meeting_bot.log`
+1. Loads your config and builds a daily schedule of meetings.
+2. Schedules each meeting using the `schedule` library.
+3. At the scheduled time, opens the Zoom link in your browser.
+4. At midnight, automatically refreshes the schedule for the new day.
+5. Skips meetings during lunch and on weekends (unless enabled).
+6. Logs all actions and errors.
 
 ## Schedule Logic
 
-- **Meeting Times**: 09:05, 10:05, 11:05, 12:05, 14:05, 15:05, 16:05 (IST)
-- **Lunch Break**: 13:00-14:00 (1-2 PM) - No meetings
-- **Last Class**: Starts at 16:05, ends at 17:00
-- **Weekends**: Meetings only if `weekend: true` in config
-- **Priority**: Lab sessions override regular/elective meetings
+- **Meeting Times:** 09:05, 10:05, 11:05, 12:05, 14:05, 15:05, 16:05 (IST)
+- **Lunch Break:** 13:00-14:00 (1-2 PM)
+- **Last Class:** Starts at 16:05, ends at 17:00
+- **Priority:** Lab > Elective > Regular
+- **No Retroactive Joins:** Missed meetings are not joined later
 
-## Logging
+## Troubleshooting
 
-The bot creates detailed logs in:
-- **Console**: Real-time output
-- **File**: `meeting_bot.log` with timestamps
+- Check your system clock and timezone (should be IST)
+- Make sure `config.yaml` is valid YAML and matches the example
+- Check `meeting_bot.log` for errors
+- If the bot misses meetings, ensure your computer is on and not asleep
 
-Log levels:
-- `INFO`: Meeting joins, schedule info
-- `DEBUG`: Schedule checks (when no meetings)
-- `ERROR`: Failed meeting joins, configuration errors
+## Running on Startup (Windows)
+2. Place the batch file in the Startup folder (`Win+R`, type `shell:startup`)
 
 ## File Structure
 
 ```
 auto-zoom-meetings/
-├── main.py           # Main application
-├── bot.py            # Meeting bot logic
+├── main.py           # Main entry point
+├── bot.py            # Bot logic
 ├── config.yaml       # Meeting configuration
-├── README.md         # This documentation
+├── README.md         # Documentation
 ├── pyproject.toml    # Project metadata
-└── meeting_bot.log   # Generated log file
+└── meeting_bot.log   # Log file
 ```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **No meetings joining**:
-   - Check system time is correct (IST)
-   - Verify `config.yaml` format
-   - Ensure `weekend: true` if testing on weekends
-
-2. **Wrong meeting opened**:
-   - Check priority logic (Lab > Elective > Regular)
-   - Verify meeting times in config
-
-3. **Browser not opening**:
-   - Ensure default browser is set
-   - Check Zoom links are valid
-   - Verify internet connection
-   - Check for pop-up blockers, set it to allow pop-ups
-
-### Debug Mode
-
-To see all schedule checks, modify logging level in `main.py`:
-```python
-logging.basicConfig(level=logging.DEBUG, ...)
-```
-### Adding Features
-
-1. **New Meeting Types**: Add to `config.yaml` and update priority logic
-2. **Add Browser Options**: Interact with different browsers
-3. **Custom Schedule**: Update time checking logic in `get_current_meeting()`
 
 ## License
+
 MIT License
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make changes
-4. Test thoroughly
-5. Submit a pull request
-
-## Support
-
-For issues or questions:
-1. Check the troubleshooting section
-2. Review log files
-3. Create an issue with:
-   - Your `config.yaml` (remove sensitive links)
-   - Relevant log entries
-   - System information
