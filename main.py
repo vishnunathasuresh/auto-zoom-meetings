@@ -7,7 +7,6 @@ from logging import (
     StreamHandler,
     error,
     info,
-    debug,
 )
 from yaml import safe_load
 from dataclasses import dataclass
@@ -44,7 +43,7 @@ class Config:
 def main():
     config = Config()
     info("Configuration loaded successfully")
-    debug(f"Config details: {config}")
+
     bot = ZoomMeetingBot(config)
     info("Starting Zoom Meeting Bot...")
     bot.run()
