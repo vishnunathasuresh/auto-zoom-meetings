@@ -9,10 +9,12 @@ wheels/
 .idea/
 .vscode/
 .env
+logs/
+*.log
 # Virtual environments
 .venv
 
 /config.yaml
 /copilot-instructions.md
 /hardcoded.py
-/meeting_bot.log
+logs/bot - 2025-09-29.log
