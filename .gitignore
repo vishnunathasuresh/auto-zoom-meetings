@@ -9,7 +9,7 @@ wheels/
 .idea/
 .vscode/
 .env
-logs/
+log/
 *.log
 # Virtual environments
 .venv
