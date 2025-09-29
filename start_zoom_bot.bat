@@ -1,3 +1,3 @@
 @echo off
-cd /d C:\Users\VISHNUNATH\Desktop\auto-zoom-meetings
+cd path\to\your\project\
 uv run main.py

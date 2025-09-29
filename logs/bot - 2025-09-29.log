@@ -1,0 +1,10 @@
+01:44:52 PM - ERROR -->  Exception occurred in main():
+Traceback (most recent call last):
+  File "C:\Users\VISHNUNATH\Desktop\auto-zoom-meetings\main.py", line 48, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\VISHNUNATH\Desktop\auto-zoom-meetings\main.py", line 40, in main
+    jsonschema.validate(config_data, CONFIG_SCHEMA)
+    ^^^^^^^^^^
+NameError: name 'jsonschema' is not defined
+

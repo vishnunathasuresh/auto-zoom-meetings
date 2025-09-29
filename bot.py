@@ -3,7 +3,7 @@ import webbrowser
 from time import sleep
 from datetime import datetime, date
 from schedule import every, run_pending
-from logging import error, info
+from logging import debug, error, info
 import sys
 
 from config_types import Config, ClassType, Breaks, Meeting
@@ -130,7 +130,7 @@ class Bot:
             for job in jobs:
                 schedule.cancel_job(job)
             self.generate_schedule()
-            info(f"Meetings scheduled: {self.meetings}")
+            debug(f"Today's Meetings: {self.meetings}")
             if not self.meetings:
                 info("No meetings scheduled for today.")
                 return
